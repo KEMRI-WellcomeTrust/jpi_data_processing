@@ -1,0 +1,96 @@
+---
+title: "JPI Data Processing"
+author: "CHAIN Data Team"
+date: "2025-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, include = TRUE)
+
+```
+
+### Load necesary libraries
+```{r}
+library(tidyverse)
+library(here)
+library(lubridate)
+library(kableExtra)
+library(janitor)
+library(table1)
+library(readr)
+library(ggplot2)
+library(DT)
+library(data.table)
+
+#load datasets
+community_wet_df <- readRDS(here("data","community_wet_df.rds"))
+community_stool_df <- readRDS(here("data","community_stool_df.rds"))
+community_care_seeking_df <- readRDS(here("data","community_care_seeking_df.rds"))
+exit_df <- readRDS(here("data","exit_df.rds"))
+hospital_df <- readRDS(here("data","hospital_df.rds"))
+
+#clusters
+roka_dispensary_register <- read_csv(here("data", "roka_dispensary_register.csv"))
+roka_ocean_register <- read_csv(here("data", "roka_ocean_register.csv"))
+
+clusters_df <- rbind(roka_dispensary_register, roka_ocean_register)
+
+file_path = "/srv/shiny-server/jpi/processed_data/"
+
+```
+
+### Data Cleaning
+```{r}
+
+hospital_df$ageyrs_adm = as.numeric(hospital_df$ageyrs_adm)
+
+
+```
+
+
+### Summary value boxes
+```{r}
+community <- as.numeric(length(which(!is.na(community_wet_df$record_id))))
+hospital <- as.numeric(length(which(!is.na(hospital_df$record_id))))
+exit <- as.numeric(length(which(!is.na(exit_df$record_id))))
+
+main_value_boxes <- data.frame(community = community, hospital = hospital, exit = exit)
+
+save(main_value_boxes,file = paste0(file_path, "main_value_boxes.RData") )
+
+```
+
+### hospital enrolment curve
+```{r}
+# use hospital df
+```
+
+### hospital participant characteristics
+```{r}
+part_summary <- hospital_df %>% group_by(season_adm) %>% summarize(
+  enrolled = n(),
+  Male = length(which(sex_adm == "Male")),
+  Male = paste0(Male, " (", as.character(round(Male/enrolled * 100, 0)), "%)"),
+  Mean_Age_yrs = round(mean(ageyrs_adm, na.rm = TRUE), 1)
+)
+
+
+save(part_summary,file = paste0(file_path, "part_summary.RData") )
+
+```
+
+### Save core datasets
+```{r}
+
+save(community_wet_df,file = paste0(file_path, "community_wet_df.RData") )
+save(community_stool_df,file = paste0(file_path, "community_stool_df.RData") )
+save(community_care_seeking_df,file = paste0(file_path, "community_care_seeking_df.RData") )
+save(exit_df,file = paste0(file_path, "exit_df.RData") )
+save(hospital_df,file = paste0(file_path, "hospital_df.RData") )
+
+
+```
+
+
+
