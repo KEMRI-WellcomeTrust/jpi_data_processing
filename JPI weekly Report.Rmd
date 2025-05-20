@@ -1,0 +1,318 @@
+---
+title: "JPI Weekly Report"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+editor_options:
+  
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      include = TRUE)
+```
+
+```{r}
+library(tidyverse, quietly = T) 
+library(here)      # managing work directories
+library(kableExtra)
+library(janitor)
+library(ggplot2)
+library(lubridate)
+library(table1)
+#install.packages("gtsummary")
+library(gtsummary)
+```
+
+```{r}
+hospital_df <- readRDS(here("data","hospital_df.rds"))
+community_wet_df <- readRDS(here("data","community_wet_df.rds"))
+community_stool_df <- readRDS(here("data","community_stool_df.rds"))
+community_care_seeking_df <- readRDS(here("data","community_care_seeking_df.rds"))
+exit_df <- readRDS(here("data","exit_df.rds"))
+pps_ward_df <- readRDS(here("data","pps_ward_df.rds"))
+pps_patient_df <- readRDS(here("data","pps_patient_df.rds"))
+
+```
+ 
+
+```{r}
+study_start_date <- as.Date("2025-04-01")  
+
+hospital_df <- hospital_df %>%
+  mutate(
+    Week = as.numeric(floor(difftime(date_adm, study_start_date, units = "weeks"))) + 1,  # Add 1 to start at Week 1
+    Week_start_date = study_start_date + ((Week - 1) * 7),  # subtracts 1 from the week number, multiply by 7 days in a week
+    Week_end_date = Week_start_date + 6, ## adds 6 days to the week start date 
+    Year_Month = format(date_adm, "%Y-%m"))
+
+```
+###  Hospital Enrolment curve 
+```{r}
+
+daily_enrolment <- hospital_df %>%
+  group_by(date_adm,sex_adm, ) %>%
+  summarise(Daily_Enrolled = n(), .groups = "drop") %>%
+  arrange(date_adm,sex_adm ) %>%
+  group_by(sex_adm) %>%
+  mutate(Cumulative_Enrolled = cumsum(Daily_Enrolled))
+
+
+## plot graph
+
+plot1 <- ggplot(daily_enrolment, aes(x = date_adm, y = Cumulative_Enrolled, color = sex_adm, group = sex_adm)) +
+  geom_line(size = 1.2) +
+  geom_text(aes(label = Cumulative_Enrolled), vjust = -0.5, size = 3) +
+  labs(
+    title = "Cumulative Patient Enrollments Over Time by Sex",
+    x = "Admission Date",
+    y = "Cumulative Enrollments",
+    color = "Sex"
+  ) +
+  theme_minimal()
+
+print(plot1)
+
+```
+### Community enrollemnt 
+```{r}
+#  study start date
+study_start_date <- as.Date("2025-04-01")
+
+households_weekly_enrol <- community_wet_df %>%
+  mutate(
+    # Calculate week number based on survey date
+    Week = as.numeric(floor(difftime(date_survey_hh, study_start_date, units = "weeks"))) + 1,
+    Week_start_date = study_start_date + ((Week - 1) * 7),  # Week start date
+    Week_end_date = Week_start_date + 6,  # Week end date
+    Year_Month = format(date_survey_hh, "%Y-%m")  # Year-Month
+  ) %>%
+  group_by(Week, Week_start_date, Week_end_date) %>%
+  summarise(Households_Enrolled = n_distinct(record_id), .groups = "drop") %>%
+  arrange(Week) %>%
+  adorn_totals(where = "row", name = "Total", fill = "-")  # Add row totals
+
+kbl(households_weekly_enrol,caption = "Households summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+```
+
+```{r}
+
+```
+
+\newpage
+```{r}
+admission_samples_summary <- hospital_df %>%
+  summarise(
+    Rectal_Swab = sum(!is.na(date_rectswab_adm))
+    ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Sample_Type",
+    values_to = "Total_Collected"
+  ) %>%
+  adorn_totals("row")
+
+
+kbl(admission_samples_summary,caption = "Admission samples summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE)  
+```
+
+
+```{r}
+stool_summary <- stool_data %>%
+  summarise(
+    Total_Collected = sum(!is.na(date_collect_stool)),
+    Missing = sum(is.na(date_collect_stool)))
+
+
+stool_summary_by_hh <- stool_data %>%
+  group_by(hm_number_hh) %>%
+  summarise(
+    Total_members = first(na.omit(num_hh_members_hh)),
+    Members_Present = first(na.omit(num_memb_pre_hh)),  # total individuals in the homestead
+    Stool_Prod = sum(!is.na(date_collect_stool)),  # collected stool samples
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Expected = 6,
+    Percent_Produced = paste0(round((Stool_Prod / Expected) * 100), "%")  # based on expected 6
+  )
+
+kbl(stool_summary_by_hh,
+    caption = "Stool per homestead",
+    booktabs = TRUE) %>%
+  kable_styling(
+    latex_options = c("striped", "scale_down", "hold_position", "bordered"),
+    font_size = 8,
+    full_width = TRUE,
+    position = "left"
+  ) %>%
+  row_spec(0, bold = TRUE)
+
+```
+\newpage
+```{r}
+
+study_start_date <- as.Date("2025-04-01")
+
+# Join household data with enrolment data
+households_per_week <- household_data %>%
+  mutate(
+    Week = as.numeric(floor(difftime(date_survey_hh, study_start_date, units = "weeks"))) + 1,  # Week calculation
+    Week_start_date = study_start_date + ((Week - 1) * 7),  # Week start date
+    Week_end_date = Week_start_date + 6,  # Week end date
+    Year_Month = format(date_survey_hh, "%Y-%m")
+  ) %>%
+  group_by(Week, Week_start_date, Week_end_date) %>%
+  summarise(Households_Enrolled = n_distinct(record_id), .groups = "drop") %>%
+  arrange(Week) %>% 
+   adorn_totals(where = "row", name = "Total", fill = "-")
+
+kbl(households_per_week,caption = "Households summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+```
+
+```{r}
+# Step 1: Summarise per household
+sample_summary <- environ_data %>%
+  group_by(hm_number_hh) %>%
+  summarise(
+    Water = sum(!is.na(date_collect_ws)),
+    Latrine = sum(!is.na(date_collect_ls)),
+    Soil = sum(!is.na(date_collect_ss)),
+    Chicken_Faeces = sum(!is.na(date_collect_cf)),
+    .groups = "drop"
+  )
+
+```
+
+
+```{r}
+
+# Step 1: Summarise per household
+sample_summary <- community_wet_df %>%
+  group_by(hm_number_hh) %>%
+  summarise(
+    Water = sum(!is.na(date_collect_ws)),
+    Latrine = sum(!is.na(date_collect_ls)),
+    Soil = sum(!is.na(date_collect_ss)),
+    Chicken_Faeces = sum(!is.na(date_collect_cf)),
+    .groups = "drop"
+  )
+
+# Step 2: Compute totals and percentages
+sample_summary <- sample_summary %>%
+  mutate(
+    Total_Samples_Num = Water + Latrine + Soil + Chicken_Faeces,
+    Max_Possible = 1,
+    Total_Max_Pos = 4,
+    Percent_Samples = round((Total_Samples_Num / Total_Max_Pos) * 100, 1)
+  )
+
+# Step 3: Add % strings to each column
+sample_summary <- sample_summary %>%
+  mutate(
+    Water = paste0(Water, " (", round((Water / Max_Possible) * 100, 1), "%)"),
+    Latrine = paste0(Latrine, " (", round((Latrine / Max_Possible) * 100, 1), "%)"),
+    Soil = paste0(Soil, " (", round((Soil / Max_Possible) * 100, 1), "%)"),
+    Chicken_Faeces = paste0(Chicken_Faeces, " (", round((Chicken_Faeces / Max_Possible) * 100, 1), "%)"),
+    Total_Samples = paste0(Total_Samples_Num, " (", Percent_Samples, "%)")
+  ) %>%
+  arrange(desc(Total_Samples_Num)) %>%  # Sort by actual numeric total
+  select(hm_number_hh, Water, Latrine, Soil, Chicken_Faeces, Total_Samples) 
+ 
+
+# Step 4: Display with kable
+kbl(sample_summary,
+    caption = "Environmental Samples Summary by Household",
+    booktabs = TRUE,
+    linesep = "\\addlinespace",
+    align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),
+                font_size = 8,
+                full_width = TRUE,
+                position = "left") %>%
+  row_spec(0, bold = TRUE)
+
+```
+\newpage
+```{r}
+
+# Get total number of unique households
+total_households <- environ_data %>%
+  distinct(hm_number_hh) %>%
+  nrow()
+
+# Summarise number of households per sample type
+sample_summary <- environ_data %>%
+  group_by(hm_number_hh) %>%
+  summarise(
+    Water = any(!is.na(date_collect_ws)),
+    Latrine = any(!is.na(date_collect_ls)),
+    Soil = any(!is.na(date_collect_ss)),
+    Chicken_Faeces = any(!is.na(date_collect_cf)),
+    .groups = "drop"
+  ) %>%
+  summarise(
+    Water = sum(Water),
+    Latrine = sum(Latrine),
+    Soil = sum(Soil),
+    Chicken_Faeces = sum(Chicken_Faeces)
+  ) %>%
+  pivot_longer(cols = everything(), names_to = "Sample Type", values_to = "Households") %>%
+  mutate(
+    Percent = round((Households / total_households) * 100, 1),
+    `Households (%)` = paste0(Households, " (", Percent, "%)")
+  ) %>%
+  select(`Sample Type`, `Households (%)`)
+
+# Display the table
+kbl(sample_summary,
+    caption = "Households That Provided Each Environmental Sample",
+    booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),
+                font_size = 10,
+                full_width = TRUE,
+                position = "left") %>%
+  row_spec(0, bold = TRUE)
+
+```
+
+
+```{r}
+# 
+# # Step 1: Prepare cumulative exit data
+# exit <- exit_data %>%
+#   filter(!is.na(date_interview_exit)) %>%
+#   # Ensure that the date variable is properly treated as a Date object
+#   mutate(date_interview_exit = as.Date(date_interview_exit)) %>%
+#   group_by(date_interview_exit) %>%
+#   summarise(Daily_Exit = n(), .groups = "drop") %>%
+#   arrange(date_interview_exit) %>%
+#   mutate(Cumulative_Exit = cumsum(Daily_Exit))
+# 
+# kbl(exit,
+#     caption = "Exit Interviews ",
+#     booktabs = TRUE) %>%
+#   kable_styling(latex_options = c("striped", "scale_down", "hold_position"),
+#                 font_size = 8,
+#                 full_width = TRUE,
+#                 position = "left") %>%
+#   row_spec(0, bold = TRUE)
+```
+
+```{r}
+# Assuming household_list has all expected homesteads
+# If you don't already have it, extract from stool_data or another dataset
+household_list <- stool_data %>%
+  distinct(hm_number_hh)

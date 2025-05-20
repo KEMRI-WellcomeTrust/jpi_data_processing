@@ -1,0 +1,81 @@
+---
+title: "field_work_register"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-05-05"
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(here)
+library(readxl)
+```
+
+```{r}
+## sampled - From Moses 
+New_Mwembekati_hms_1km_from_dispensary_sample <- read_csv(here("field_work_register/sampled/New_Mwembekati_hms_1km_from_dispensary.csv"))
+
+## from DSS
+New_Mwembekati_hms_1km_from_dispensary_dss <- read_csv(here("field_work_register/raw/New_Mwembekati_hms_1km_from_dispensary.csv"))
+```
+### New_Mwembekati_1km_from_dispensary 
+```{r}
+## select hm_no, type
+New_Mwembekati_hms_1km_from_dispensary_sample <- New_Mwembekati_hms_1km_from_dispensary_sample %>% 
+  select(hm_no, type)
+
+### Join with DSS raw data to get residents 
+New_Mwembekati_hms_1km_from_dispensary_sample_final <- New_Mwembekati_hms_1km_from_dispensary_sample %>% 
+  left_join(New_Mwembekati_hms_1km_from_dispensary_dss, by = "hm_no") %>% 
+  select(ez, sub_ez, hm_no,type, everything(),-longitude_dd, -latitude_dd, -fk_bu,-fk_location, -fk_district, -fk_sublocation,-loc_name,-fk_sub_ez, -fk_hm, -fk_person,-vital_status)
+
+ 
+```
+## Generate lables 
+```{r}
+mwembekati_dispensary <- New_Mwembekati_hms_1km_from_dispensary_sample_final %>%
+  group_by(hm_no) %>%
+  mutate(member_id = row_number()) %>%
+  ungroup()
+
+### Generate site variable 
+mwembekati_dispensary <- mwembekati_dispensary %>%
+  mutate(
+    site = 1,
+    record_id = str_c(site, str_c(ez, sub_ez), hm_no, sep = "-")
+  ) %>%
+  relocate(site, .before = 1)
+
+mwembekati_dispensary <- mwembekati_dispensary %>%
+  mutate(
+    # Create member_number
+    member_number = str_c(site, str_c(ez, sub_ez), hm_no, member_id, sep = "-"),
+    
+    # Create stool_label
+    stool_label = str_c(member_number, "W", "F", sep = "-"),
+    
+    # Create water_label
+    water_label = str_c(site, str_c(ez, sub_ez, sep = ""), hm_no, "W", "WA", sep = "-"),
+    
+    # Create latrine_label
+    latrine_label = str_c(site, str_c(ez, sub_ez, sep = ""), hm_no, "W", "LA", sep = "-"),
+    
+    # Create chicken_feaces_label
+    chicken_feaces_label = str_c(site, str_c(ez, sub_ez, sep = ""), hm_no, "W", "CF", sep = "-"),
+    
+    # Create soil_label
+    soil_label = str_c(site, str_c(ez, sub_ez, sep = ""), hm_no, "W", "SO", sep = "-")
+  ) %>%
+  relocate(c(member_number, stool_label), .after = last_col())  # Move member_number and stool_label to the last columns
+
+write_csv(mwembekati_dispensary, here("field_work_register","register","mwembekati_dispensary_register.csv"))
+
+```
+

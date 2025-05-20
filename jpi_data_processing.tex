@@ -1,0 +1,187 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={JPI Data Processing},
+  pdfauthor={CHAIN Data Team},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{JPI Data Processing}
+\author{CHAIN Data Team}
+\date{2025-04-17}
+
+\begin{document}
+\maketitle
+
+\subsubsection{Load necesary libraries}\label{load-necesary-libraries}
+
+\subsubsection{Save core datasets}\label{save-core-datasets}
+
+\#\#clusters
+
+\subsubsection{Data Cleaning}\label{data-cleaning}
+
+\begin{verbatim}
+##  [1] "date_survey_hh"                  "date_crf_completed_hh"          
+##  [3] "date_crf_reviewed_hh"            "date_visit_esc"                 
+##  [5] "date_consent_esc"                "date_collect_ws"                
+##  [7] "date_collect_ls"                 "date_collect_ls_2"              
+##  [9] "date_collect_cf"                 "date_collect_ss"                
+## [11] "date_water_recieve"              "date_latrine_recieve"           
+## [13] "date_outdoor_recieve"            "date_chickfaeces_sample_recieve"
+## [15] "date_soil_recieve"               "date_crf_reviewed_esc"          
+## [17] "date_crf_completed_esc"
+\end{verbatim}
+
+\subsubsection{Summary value boxes}\label{summary-value-boxes}
+
+\subsubsection{1. Hospital Reports}\label{hospital-reports}
+
+\subsubsection{hospital enrolment curve}\label{hospital-enrolment-curve}
+
+\subsubsection{hospital participant
+characteristics}\label{hospital-participant-characteristics}
+
+\subsubsection{Demographic
+characteristics}\label{demographic-characteristics}
+
+\subsubsection{Monthly hospital
+enrolment}\label{monthly-hospital-enrolment}
+
+\subsubsection{2. Community wet Reports}\label{community-wet-reports}
+
+\begin{table}[!h]
+
+\caption{\label{tab:unnamed-chunk-12}Households summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{8}{10}\selectfont
+\begin{tabu} to \linewidth {>{\raggedright}X>{\centering}X>{\centering}X>{\centering}X}
+\toprule
+\textbf{Week} & \textbf{Week\_start\_date} & \textbf{Week\_end\_date} & \textbf{Households\_Enrolled}\\
+\midrule
+\cellcolor{gray!10}{1} & \cellcolor{gray!10}{2025-04-01} & \cellcolor{gray!10}{2025-04-07} & \cellcolor{gray!10}{15}\\
+\addlinespace
+2 & 2025-04-08 & 2025-04-14 & 16\\
+\addlinespace
+\cellcolor{gray!10}{3} & \cellcolor{gray!10}{2025-04-15} & \cellcolor{gray!10}{2025-04-21} & \cellcolor{gray!10}{4}\\
+\addlinespace
+4 & 2025-04-22 & 2025-04-28 & 11\\
+\addlinespace
+\cellcolor{gray!10}{Total} & \cellcolor{gray!10}{-} & \cellcolor{gray!10}{-} & \cellcolor{gray!10}{46}\\
+\bottomrule
+\end{tabu}}
+\end{table}
+
+\subsubsection{Housing charactristics}\label{housing-charactristics}
+
+\subsubsection{Stool sample
+completeness}\label{stool-sample-completeness}
+
+\begin{table}[!h]
+
+\caption{\label{tab:unnamed-chunk-15}Stool summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{8}{10}\selectfont
+\begin{tabu} to \linewidth {>{\raggedright}X>{\centering}X>{\centering}X>{\centering}X>{\centering}X>{\raggedright}X}
+\toprule
+\textbf{total\_participants} & \textbf{stool\_collected} & \textbf{not\_collected} & \textbf{percent\_complete} & \textbf{target\_samples} & \textbf{success\_rate}\\
+\midrule
+\cellcolor{gray!10}{139} & \cellcolor{gray!10}{122} & \cellcolor{gray!10}{17} & \cellcolor{gray!10}{87.8\%} & \cellcolor{gray!10}{264} & \cellcolor{gray!10}{46.2\%}\\
+\bottomrule
+\end{tabu}}
+\end{table}
+
+\subsubsection{Rectal swabs - Admission
+samples}\label{rectal-swabs---admission-samples}
+
+\begin{table}[!h]
+
+\caption{\label{tab:unnamed-chunk-16}Admission samples summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{8}{10}\selectfont
+\begin{tabu} to \linewidth {>{\raggedright}X>{\centering}X}
+\toprule
+\textbf{Sample\_Type} & \textbf{Total\_Collected}\\
+\midrule
+\cellcolor{gray!10}{Rectal\_Swab} & \cellcolor{gray!10}{31}\\
+\addlinespace
+Total & 31\\
+\bottomrule
+\end{tabu}}
+\end{table}
+
+\end{document}

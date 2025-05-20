@@ -1,0 +1,32 @@
+record_id,latrine_sample_collected_ls,rson_no_sample_ls,outdoor_sample_collected_ls,rson_no_sample_od_ls
+1-12A-44,No,Not applicable,No,Missed
+1-12A-110,No,Slab covered,No,Flush toilet
+1-12A-153,No,Not applicable,No,Missed
+1-12A-188,No,Not applicable,No,Flush toilet
+1-12D-170,No,Slab covered,No,Flush toilet
+1-12D-184,No,Not applicable,No,Missed
+1-12D-260,No,Not applicable,No,Missed
+1-12D-262,No,Not applicable,No,Missed
+1-12D-282,No,Slab covered,No,Flush toilet
+1-12F-73,No,Not applicable,No,Flush toilet
+1-12F-79,No,Slab covered,No,Flush toilet
+1-12F-82,No,Not applicable,Yes,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-12F-83,No,Not applicable,Yes,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-12G-553,No,Slab covered,No,Flush toilet
+1-12H-86,No,Not applicable,No,Missed
+1-12H-103,No,Slab covered,No,Flush toilet
+1-12H-152,No,Not applicable,Yes,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-12H-185,No,Not applicable,No,Missed
+1-12H-405,No,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv,No,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-12N-175,No,Slab covered,No,Flush toilet
+1-12N-273,No,Not applicable,Yes,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-12N-447,No,Not applicable,Yes,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-12O-37,No,Slab covered,No,Flush toilet
+1-12O-409,No,Not applicable,No,Missed
+1-12O-617,No,Not applicable,No,Missed
+1-69D-316,No,Slab covered,No,Flush toilet
+1-69D-317,No,Slab covered,No,Flush toilet
+1-69E-514,No,Missed,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-69E-616,No,Missed,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv,/home/ekahindi/jpi_data_processing/rsns_latrine_not_collected.csv
+1-71E-201,No,Slab covered,No,Flush toilet
+1-71E-292,No,Slab covered,No,Flush toilet

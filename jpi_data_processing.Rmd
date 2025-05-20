@@ -2,7 +2,11 @@
 title: "JPI Data Processing"
 author: "CHAIN Data Team"
 date: "2025-04-17"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -22,32 +26,77 @@ library(readr)
 library(ggplot2)
 library(DT)
 library(data.table)
+library(haven)
+library(scales)
+```
 
+```{r}
+file_path = "/srv/shiny-server/jpi/processed_data/"
+```
+
+```{r}
 #load datasets
+hospital_df <- readRDS(here("data","hospital_df.rds"))
 community_wet_df <- readRDS(here("data","community_wet_df.rds"))
 community_stool_df <- readRDS(here("data","community_stool_df.rds"))
 community_care_seeking_df <- readRDS(here("data","community_care_seeking_df.rds"))
 exit_df <- readRDS(here("data","exit_df.rds"))
-hospital_df <- readRDS(here("data","hospital_df.rds"))
+pps_ward_df <- readRDS(here("data","pps_ward_df.rds"))
+pps_patient_df <- readRDS(here("data","pps_patient_df.rds"))
+rectal_swabs_df <- readRDS(here("data","samples","rectal_swabs_df.rds"))
+stool_kidms_df <- readRDS(here("data","samples","stool_kidms_df.rds"))
 
-#clusters
-roka_dispensary_register <- read_csv(here("data", "roka_dispensary_register.csv"))
-roka_ocean_register <- read_csv(here("data", "roka_ocean_register.csv"))
+```
+### Save core datasets
+```{r}
+save(community_wet_df,file = paste0(file_path, "community_wet_df.RData") )
+save(community_stool_df,file = paste0(file_path, "community_stool_df.RData") )
+save(community_care_seeking_df,file = paste0(file_path, "community_care_seeking_df.RData") )
+save(exit_df,file = paste0(file_path, "exit_df.RData") )
+save(hospital_df,file = paste0(file_path, "hospital_df.RData") )
+save(stool_kidms_df,file = paste0(file_path, "stool_kidms_df.RData"))
+```
+##clusters
+```{r}
+#roka_dispensary_register <- read_csv(here("data", "roka_dispensary_register.csv"))
+#roka_ocean_register <- read_csv(here("data", "roka_ocean_register.csv"))
 
-clusters_df <- rbind(roka_dispensary_register, roka_ocean_register)
+#clusters_df <- rbind(roka_dispensary_register, roka_ocean_register)
 
-file_path = "/srv/shiny-server/jpi/processed_data/"
+# Columns in df1 but not in df2
+#cols_only_in_df1 <- setdiff(names(roka_dispensary_register), names(roka_ocean_register))
+
+# Columns in df2 but not in df1
+#cols_only_in_df2 <- setdiff(names(roka_ocean_register), names(roka_dispensary_register))
+
+# Display mismatched columns
+#list(
+  #only_in_df1 = cols_only_in_df1,
+ # only_in_df2 = cols_only_in_df2
+#)
 
 ```
 
 ### Data Cleaning
 ```{r}
-
 hospital_df$ageyrs_adm = as.numeric(hospital_df$ageyrs_adm)
 
+### Clean dates in "POSIXct" "POSIXt" 
+community_wet_df %>% 
+select(starts_with("date_")) %>% 
+names()
+
+date_vars <- c(
+  "date_survey_hh","date_crf_completed_hh","date_crf_reviewed_hh","date_visit_esc","date_consent_esc","date_collect_ws","date_collect_ls", "date_collect_ls_2" ,"date_collect_cf","date_collect_ss","date_water_recieve","date_latrine_recieve","date_outdoor_recieve", "date_chickfaeces_sample_recieve","date_soil_recieve","date_soil_recieve","date_crf_reviewed_esc", "date_crf_completed_esc"  )
+               
+
+# Apply transformation to each variable in date_vars
+walk(date_vars, function(var) {
+  community_wet_df[[var]] <<- as.Date(format(
+    as.POSIXct(as.character(zap_labels(community_wet_df[[var]])), tz = "Africa/Nairobi"),
+    tz = "Africa/Nairobi" ))})
 
 ```
-
 
 ### Summary value boxes
 ```{r}
@@ -55,11 +104,16 @@ community <- as.numeric(length(which(!is.na(community_wet_df$record_id))))
 hospital <- as.numeric(length(which(!is.na(hospital_df$record_id))))
 exit <- as.numeric(length(which(!is.na(exit_df$record_id))))
 
-main_value_boxes <- data.frame(community = community, hospital = hospital, exit = exit)
+pps_ward <- as.numeric(length(which(!is.na(pps_ward_df$record_id))))
+
+pps_patient <- as.numeric(length(which(!is.na(pps_patient_df$record_id))))
+
+main_value_boxes <- data.frame(community = community, hospital = hospital, exit = exit, pps_ward = pps_ward, pps_patient = pps_patient)
 
 save(main_value_boxes,file = paste0(file_path, "main_value_boxes.RData") )
 
 ```
+### 1. Hospital Reports 
 
 ### hospital enrolment curve
 ```{r}
@@ -75,22 +129,357 @@ part_summary <- hospital_df %>% group_by(season_adm) %>% summarize(
   Mean_Age_yrs = round(mean(ageyrs_adm, na.rm = TRUE), 1)
 )
 
-
 save(part_summary,file = paste0(file_path, "part_summary.RData") )
 
 ```
-
-### Save core datasets
+### Demographic characteristics 
 ```{r}
+ ## use table 1 
+## Demographic variables include age_yrs,sex_adm,axilla_temp_adm,weight_adm,length_adm,prev_adm_hosp_adm,malaria_rdt_adm,hiv_known_positive
 
-save(community_wet_df,file = paste0(file_path, "community_wet_df.RData") )
-save(community_stool_df,file = paste0(file_path, "community_stool_df.RData") )
-save(community_care_seeking_df,file = paste0(file_path, "community_care_seeking_df.RData") )
-save(exit_df,file = paste0(file_path, "exit_df.RData") )
-save(hospital_df,file = paste0(file_path, "hospital_df.RData") )
+```
+### Monthly hospital enrolment 
+```{r}
+monthly_enrolments <- hospital_df %>%
+  filter(!is.na(date_adm)) %>%
+  mutate(
+    Year_Month = paste0(
+      year(date_adm), "-",
+      lubridate::month(date_adm, label = TRUE, abbr = TRUE)
+    )
+  ) %>%
+  group_by(Year_Month) %>%
+  summarise(Enrolments = n(), .groups = "drop") %>%
+  arrange(parse_date_time(Year_Month, orders = "Y-b")) %>%  # optional: sorts chronologically
+  adorn_totals(where = "row")
 
+save(monthly_enrolments,file = paste0(file_path, "monthly_enrolments.RData") )
+
+```
+### 2. Community wet Reports 
+```{r}
+#  study start date
+study_start_date <- as.Date("2025-04-01")
+
+households_weekly_enrol <- community_wet_df %>%
+  mutate(
+    # Calculate week number based on survey date
+    Week = as.numeric(floor(difftime(date_survey_hh, study_start_date, units = "weeks"))) + 1,
+    Week_start_date = study_start_date + ((Week - 1) * 7),  # Week start date
+    Week_end_date = Week_start_date + 6,  # Week end date
+    Year_Month = format(date_survey_hh, "%Y-%m")  # Year-Month
+  ) %>%
+  group_by(Week, Week_start_date, Week_end_date) %>%
+  summarise(Households_Enrolled = n_distinct(record_id), .groups = "drop") %>%
+  arrange(Week) %>%
+  adorn_totals(where = "row", name = "Total", fill = "-")  # Add row totals
+
+kbl(households_weekly_enrol,caption = "Households summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+save(households_weekly_enrol,file = paste0(file_path, "households_weekly_enrol.RData") )
+```
+### Housing charactristics 
+```{r}
+##  variables "main_drink_water_srce_hh",             "distance_srce_hh","toilet_clean_hh",animals_kept_hh","animal_excrement_hh"
+```
+### Community Queries 
+```{r}
+mismatched_hm <- community_wet_df %>%
+  mutate(
+    extracted_hm_number = str_extract(record_id, "[^-]+$") %>% as.numeric(),
+    check_match = extracted_hm_number == hm_number_hh
+  ) %>%
+  filter(!check_match) %>%  # only show mismatches
+  select(record_id, date_survey_hh, hm_number_hh, crf_completed_by_hh)
+
+kbl(mismatched_hm,caption = "Mismatched Hms",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+save(mismatched_hm,file = paste0(file_path, "mismatched_hm.RData") )
 
 ```
 
 
+### Stool sample completeness
+
+```{r}
+# Overall completeness
+stool_completeness_summary <- community_stool_df %>%
+  summarise(
+    Target_samples = 46 * 6,
+    Total_participants = n(),
+    Stool_collected = sum(!is.na(date_collect_stool)),
+    Not_collected = sum(is.na(date_collect_stool)),
+    Percent_complete = paste0(round((Stool_collected / Total_participants) * 100, 1), "%")
+  )
+
+kbl(stool_completeness_summary,caption = "Stool summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE)
+
+save(stool_completeness_summary,file = paste0(file_path, "stool_completeness_summary.RData") )
+
+```
+### Reasons stool not collected 
+```{r}
+rsns_stool_not_collected <- community_stool_df %>%
+  filter(sample_collected_stool == "No") %>%
+  group_by(rson_no_sample_stool) %>%
+  summarise(Total = n(), .groups = "drop") %>%
+  mutate(
+    Percent = round((Total / sum(Total)) * 100, 1)
+  ) %>%
+  mutate(
+    Percent = paste0(Percent, "%")
+  ) %>%
+  adorn_totals("row", name = "Total", fill = "")
+
+save(rsns_stool_not_collected,file = paste0(file_path, "rsns_stool_not_collected.RData"))
+
+```
+### Stool kidms queries
+```{r}
+stool_wrong_serial_study_id <- stool_kidms_df %>% 
+  dplyr::filter(serial_study_id %in% c("1-61B-14-3W-F","	
+1-120-409-W-F1","1-120-409-W-F3","1-120-409-W-F4","1-12A-153-W-F","1-12A-153-W-F2","1-12A-153-W-F3","1-12A-153-W-F5","1-12A-153-W-F6","1-12A-44-2-F","1-12G-553-2W-F","1-12G-553-2W-F","112A110W-F2","112A110W-F3","112H185W-F1",	
+"112H185W-F2","112D282W-F1","	
+112D282W-F2","112N175W-F2","112A287-F1337","	
+112A287-F1","112A287-F2","112A287-F3","1-116G-478-W-F","1-113-428-6-W-F")) %>% 
+  select(serial_study_id,pk_specimen_id,date_collect,type_name)
+  
+kbl(stool_wrong_serial_study_id,caption = "Wrong format of serial study id",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+write_csv(stool_wrong_serial_study_id, file = here("queries","stool_wrong_serial_study_id.csv"))
+
+save(stool_wrong_serial_study_id,file = paste0(file_path, "stool_wrong_serial_study_id.RData"))
+
+## Missing time_point
+miss_stool_time_point<-stool_kidms_df %>% 
+  dplyr::filter(!time_point == "Wet") %>% 
+  select(serial_study_id,pk_specimen_id,date_collect,time_point)
+
+kbl(miss_stool_time_point,caption = "Missing stool time point ",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+save(miss_stool_time_point,file = paste0(file_path, "miss_stool_time_point.RData"))
+```
+
+### Rectal swabs - Admission samples
+```{r}
+rectal_swab_redcap <- hospital_df %>% 
+  select(record_id,sample_num_rectswab1_adm,sample_num_rectswab2_adm,date_rectswab_adm,rectswab_by_adm)
+
+admission_samples_summary <- hospital_df %>%
+  summarise(
+    Rectal_Swab = sum(!is.na(date_rectswab_adm))
+    ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Sample_Type",
+    values_to = "Total_Collected"
+  )
+save(admission_samples_summary,file = paste0(file_path, "admission_samples_summary.RData") )
+
+kbl(admission_samples_summary,caption = "Admission samples summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE)
+```
+### Rectal swab queries _kidms
+
+```{r}
+rectswab1_miss <- rectal_swabs_df %>% 
+  dplyr::filter(serial_study_id %in% c("1P002-W-R2","1P002-W-R2","1P003-W-R2","1P003-W-R2")) %>% 
+  select(serial_study_id,type_name,date_collect,pk_specimen_id)
+ 
+kbl(rectswab1_miss,caption = "Record ids missing rectal swab 1",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+save(rectswab1_miss,file = paste0(file_path, "rectswab1_miss.RData")) 
+
+### wrong serial number format 
+wrong_serial_study_id_format <- rectal_swabs_df %>% 
+  dplyr::filter(serial_study_id %in% c("1P-023-W-R2","1P026","IP027-W-R1","IP027-W-R2
+","1PO42-W-R2","1P060")) %>% 
+  select(serial_study_id,type_name,date_collect,pk_specimen_id)
+  
+kbl(wrong_serial_study_id_format,caption = "Wrong format of serial study id",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+write_csv(wrong_serial_study_id_format, file = here("queries","wrong_serial_study_id_format.csv"))
+
+save(wrong_serial_study_id_format,file = paste0(file_path, "wrong_serial_study_id_format.RData")) 
+
+### Rectal swab specimen source 
+rectswab_specimen_source <- rectal_swabs_df %>% 
+  dplyr::filter(specimen_source %in% c("clinic","field")) %>% 
+  select(serial_study_id,specimen_source,type_name,date_collect)
+
+kbl(rectswab_specimen_source,caption = "Wrong rectal_swab specimen source",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+write_csv(rectswab_specimen_source, file = here("queries","rectswab_specimen_source.csv"))
+
+save(rectswab_specimen_source,file = paste0(file_path, "rectswab_specimen_source.RData")) 
+
+## Rectal swabs missing date recieved 
+
+rectswab_date_recieved_miss <- rectal_swabs_df %>%
+  dplyr::filter(is.na(date_received)) %>% 
+  select(serial_study_id, type_name,pk_specimen_id,date_collect, date_received)
+  
+kbl(rectswab_date_recieved_miss,caption = "Rectswab missing date_recieved in the lab",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+write_csv(rectswab_date_recieved_miss, file = here("queries","rectswab_date_recieved_miss.csv"))
+
+save(rectswab_date_recieved_miss,file = paste0(file_path, "rectswab_date_recieved_miss.RData"))
+
+## Rectal swabs missing time recieved 
+
+rectswab_time_recieved_miss <- rectal_swabs_df %>%
+  dplyr::filter(is.na(time_received)) %>% 
+  select(serial_study_id, type_name,pk_specimen_id,date_collect, time_received)
+  
+kbl(rectswab_time_recieved_miss,caption = "Rectswab missing time_recieved in the lab",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+write_csv(rectswab_time_recieved_miss, file = here("queries","rectswab_time_recieved_miss.csv"))
+
+save(rectswab_time_recieved_miss,file = paste0(file_path, "rectswab_time_recieved_miss.RData"))
+
+```
+### Environmental samples  
+
+```{r}
+# environmental_sample_summary <- community_wet_df %>%
+#   summarise(
+#     Total_homesteads = sum(!is.na(date_survey_hh), na.rm = TRUE), 
+#     Water_samples = sum(!is.na(date_collect_ws), na.rm = TRUE),
+#     Soil_samples = sum(!is.na(date_collect_ss), na.rm = TRUE),
+#     Latrine_samples = sum(!is.na(date_collect_ls), na.rm = TRUE),
+#     Outdoor_samples = sum(!is.na(date_collect_ls_2), na.rm = TRUE),
+#     Chicken_faeces_samples = sum(!is.na(date_collect_cf), na.rm = TRUE),
+#     
+#     Total_samples = Water_samples + Soil_samples + Latrine_samples + Outdoor_samples + Chicken_faeces_samples
+#   )
+# save(environmental_sample_summary,file = paste0(file_path, "environmental_sample_summary.RData") )
+
+
+```
+### Environmental samples 2
+
+```{r}
+environmental_sample_summary_2 <- community_wet_df %>%
+  summarise(
+    Total_homesteads = sum(!is.na(date_survey_hh), na.rm = TRUE), 
+    
+    Water_samples = paste0(
+      sum(!is.na(date_collect_ws), na.rm = TRUE), " (",
+      round(sum(!is.na(date_collect_ws), na.rm = TRUE) / Total_homesteads * 100, 1), "%)"
+    ),
+    
+    Soil_samples = paste0(
+      sum(!is.na(date_collect_ss), na.rm = TRUE), " (",
+      round(sum(!is.na(date_collect_ss), na.rm = TRUE) / Total_homesteads * 100, 1), "%)"
+    ),
+    
+    Latrine_samples = paste0(
+      sum(!is.na(date_collect_ls), na.rm = TRUE), " (",
+      round(sum(!is.na(date_collect_ls), na.rm = TRUE) / Total_homesteads * 100, 1), "%)"
+    ),
+    
+    Outdoor_samples = paste0(
+      sum(!is.na(date_collect_ls_2), na.rm = TRUE), " (",
+      round(sum(!is.na(date_collect_ls_2), na.rm = TRUE) / Total_homesteads * 100, 1), "%)"
+    ),
+    
+    Chicken_faeces_samples = paste0(
+      sum(!is.na(date_collect_cf), na.rm = TRUE), " (",
+      round(sum(!is.na(date_collect_cf), na.rm = TRUE) / Total_homesteads * 100, 1), "%)"
+    )
+  ) %>%
+  pivot_longer(
+    cols = -Total_homesteads,
+    names_to = "Sample_Type",
+    values_to = "Sample_Count_%"
+  )
+save(environmental_sample_summary_2,file = paste0(file_path, "environmental_sample_summary_2.RData") )
+```
+### Reasons Latrine sample not collected 
+```{r}
+rsns_latrine_not_collected <- community_wet_df %>%
+  filter(latrine_sample_collected_ls == "No") %>%
+  group_by(rson_no_sample_ls) %>%
+  summarise(Total = n(), .groups = "drop") %>%
+  mutate(
+    Percent = round((Total / sum(Total)) * 100, 1)
+  ) %>%
+  mutate(
+    Percent = paste0(Percent, "%")
+  )
+
+save(rsns_latrine_not_collected,file = paste0(file_path, "rsns_latrine_not_collected.RData"))
+```
+
+```{r}
+rsns_latrine_not_collected <- community_wet_df %>%
+  filter(latrine_sample_collected_ls == "No") %>% 
+  select(record_id,latrine_sample_collected_ls,rson_no_sample_ls,outdoor_sample_collected_ls,rson_no_sample_od_ls,latrine_sample_by_ls,outdoor_sample_by_ls)
+
+write_csv(rsns_latrine_not_collected, here("data","rsns_latrine_not_collected.csv"))
+```
+### PPS Ward
+
+```{r}
+# First report: Summary of wards
+pps_ward_summary <- pps_ward_df %>%
+  filter(!is.na(ward_paeds_pps)) %>%
+  group_by(ward_paeds_pps) %>%
+  summarise(
+    total_enrolled_ward = n(),
+    .groups = "drop"
+  ) %>%
+  rename(Ward_Name = ward_paeds_pps)
+
+# Second report: Summary of patients
+pps_patient_summary <- pps_patient_df %>%
+  filter(!is.na(ward_name_pps)) %>%
+  group_by(ward_name_pps) %>%
+  summarise(
+    Total_patients = n(),
+    .groups = "drop"
+  ) %>%
+  rename(Ward_Name = ward_name_pps)
+
+save(pps_patient_summary,file = paste0(file_path, "pps_patient_summary.RData"))
+```
+
+```{r}
+
+
+
+
+```
 

@@ -1,0 +1,120 @@
+---
+title: "Data cleaning"
+output: html_document
+date: "2025-04-29"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(here)
+library(RMySQL)
+library(DBI)
+#install.packages("RMySQL")
+```
+
+```{r}
+kidms_user <- Sys.getenv("kidms_user_name")
+kidms_pass <- Sys.getenv("kidms_user_passowrd")
+dbname <- Sys.getenv("kidms_dbname")
+host <- Sys.getenv("kidms_host")
+mydb <- dbConnect(MySQL(),
+                  user =  kidms_user, 
+                  password =  kidms_pass, 
+                  
+                  dbname = dbname, 
+                  host = host)
+```
+### All samples 
+```{r}
+all_samples <- dbGetQuery(
+  mydb,
+  "SELECT lsr.`fk_study`, `specimen_source`, `serial_study_id`, spty.type_name, 
+       `date_collect`, `time_collect`, ls.pk_specimen_id
+FROM lab_sample_receive lsr    
+JOIN lab_specimen ls ON ls.fk_receive_specimen = lsr.id
+JOIN lab_specimen_type spty ON spty.id = lsr.fk_specimen_type
+WHERE lsr.fk_study = 337
+ORDER BY lsr.`date_collect` DESC;
+")
+
+table(all_samples$type_name, useNA = "always")
+```
+
+## Rectal swabs checks 
+```{r}
+hospital_df <- readRDS(here("data","hospital_df.rds"))
+```
+
+```{r}
+rectal_swab_redcap <- hospital_df %>% 
+  dplyr::filter(date_rectswab_adm <= "2025-04-28") %>% 
+  select(record_id, sample_num_rectswab1_adm,sample_num_rectswab2_adm,date_rectswab_adm,time_rectswab_adm)
+
+write.csv(rectal_swab_redcap,
+          here("data_cleaning","rectal_swabs_redcap.csv"),
+          row.names = F)
+
+rectal_swab_redcap2 <- hospital_df %>% 
+  dplyr::filter(date_rectswab_adm > "2025-04-28") %>% 
+  select(record_id, sample_num_rectswab1_adm,sample_num_rectswab2_adm,date_rectswab_adm,time_rectswab_adm)
+```
+
+```{r}
+rectal_swabs_kidms <- dbGetQuery(
+  mydb,
+  "SELECT lsr.`fk_study`, `specimen_source`, `serial_study_id`, spty.type_name, 
+          `date_collect`, `time_collect`, ls.pk_specimen_id
+   FROM lab_sample_receive lsr    
+   JOIN lab_specimen ls ON ls.fk_receive_specimen = lsr.id
+   JOIN lab_specimen_type spty ON spty.id = lsr.fk_specimen_type
+   WHERE lsr.fk_study = 337
+     AND spty.type_name = 'RECTAL SWAB'
+   ORDER BY lsr.`date_collect` DESC;"
+)
+
+rectal_swabs_kidms <- rectal_swabs_kidms %>% 
+  dplyr::filter(date_collect <="2025-04-28")
+
+write.csv(rectal_swabs_kidms,
+          here("data_cleaning", "rectal_swab_kidms.csv"),
+          row.names = F)
+```
+### Stool checks 
+```{r}
+community_stool_df <- readRDS(here("data","community_stool_df.rds"))
+```
+
+```{r}
+stool_kidms <- dbGetQuery(
+  mydb,
+  "SELECT lsr.fk_study, specimen_source, serial_study_id, spty.type_name, 
+          date_collect, time_collect, ls.pk_specimen_id
+   FROM lab_sample_receive lsr    
+   JOIN lab_specimen ls ON ls.fk_receive_specimen = lsr.id
+   JOIN lab_specimen_type spty ON spty.id = lsr.fk_specimen_type
+   WHERE lsr.fk_study = 337
+     AND spty.type_name = 'STOOL'
+   ORDER BY lsr.date_collect DESC;"
+)
+
+write.csv(rectal_swabs_kidms,
+          here("data_cleaning", "rectal_swab_kidms.csv"),
+          row.names = F)
+```
+### Exit interviews 
+```{r}
+exit_interrecords <- exit_df %>% 
+  select(record_id,date_interview_exit) %>% 
+  arrange(date_interview_exit)
+
+write.csv(exit_records,
+          here("data_cleaning", "exit_records.csv"),
+          row.names = F)
+```
+
