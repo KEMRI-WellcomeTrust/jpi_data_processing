@@ -1,0 +1,16 @@
+
+
+processing file: jpi_data_processing.Rmd
+1/15                  
+2/15 [setup]          
+3/15                  
+4/15 [unnamed-chunk-1]
+Error:
+! '/home/nngao/jpi_data_processing/data/roka_dispensary_register.csv' does not exist.
+Backtrace:
+ 1. readr::read_csv(here("data", "roka_dispensary_register.csv"))
+ 4. vroom (local) `<fn>`("/home/nngao/jpi_data_processing/data/roka_dispensary_register.csv")
+ 5. vroom:::check_path(path)
+
+Quitting from lines 15-41 [unnamed-chunk-1] (jpi_data_processing.Rmd)
+Execution halted
