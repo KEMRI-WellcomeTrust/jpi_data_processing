@@ -109,7 +109,8 @@ kbl(households_weekly_enrol,caption = "Households summary",booktabs = TRUE,
 ```{r}
 admission_samples_summary <- hospital_df %>%
   summarise(
-    Rectal_Swab = sum(!is.na(date_rectswab_adm))
+    Rectal_Swab = sum(!is.na(date_rectswab_adm)),
+    Stool = sum(!is.na(date_stoolsample_adm))
     ) %>%
   pivot_longer(
     cols = everything(),
@@ -127,13 +128,13 @@ kbl(admission_samples_summary,caption = "Admission samples summary",booktabs = T
 
 
 ```{r}
-stool_summary <- stool_data %>%
+stool_summary <- community_stool_df %>%
   summarise(
     Total_Collected = sum(!is.na(date_collect_stool)),
     Missing = sum(is.na(date_collect_stool)))
 
 
-stool_summary_by_hh <- stool_data %>%
+stool_summary_by_hh <- community_stool_df %>%
   group_by(hm_number_hh) %>%
   summarise(
     Total_members = first(na.omit(num_hh_members_hh)),

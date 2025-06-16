@@ -1,0 +1,160 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={JPI Alarum Report},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{JPI Alarum Report}
+\author{}
+\date{\vspace{-2.5em}2025-06-04}
+
+\begin{document}
+\maketitle
+
+\begin{table}[!h]
+
+\caption{\label{tab:unnamed-chunk-7}Recruitment summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{10}{12}\selectfont
+\begin{tabu} to \linewidth {>{\raggedright}X>{\centering}X}
+\toprule
+\textbf{Cohort} & \textbf{Total\_enrolled}\\
+\midrule
+\cellcolor{gray!10}{Total Hospital} & \cellcolor{gray!10}{97}\\
+\addlinespace
+Paeds & 91\\
+\addlinespace
+\cellcolor{gray!10}{Adults} & \cellcolor{gray!10}{6}\\
+\addlinespace
+Community & 115\\
+\addlinespace
+\cellcolor{gray!10}{Exit} & \cellcolor{gray!10}{644}\\
+\addlinespace
+pps\_ward rounds & 4\\
+\addlinespace
+\cellcolor{gray!10}{pps\_patients} & \cellcolor{gray!10}{86}\\
+\bottomrule
+\end{tabu}}
+\end{table}
+
+\includegraphics{JPI-Alarum-Report_files/figure-latex/unnamed-chunk-8-1.pdf}
+\newpage
+
+\begin{table}[!h]
+
+\caption{\label{tab:unnamed-chunk-9}Stool summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{8}{10}\selectfont
+\begin{tabu} to \linewidth {>{\raggedright}X>{\centering}X>{\centering}X>{\centering}X>{\centering}X}
+\toprule
+\textbf{Target\_samples} & \textbf{Total\_participants} & \textbf{Stool\_collected} & \textbf{Not\_collected} & \textbf{Percent\_complete}\\
+\midrule
+\cellcolor{gray!10}{276} & \cellcolor{gray!10}{363} & \cellcolor{gray!10}{329} & \cellcolor{gray!10}{34} & \cellcolor{gray!10}{90.6\%}\\
+\bottomrule
+\end{tabu}}
+\end{table}
+
+\includegraphics{JPI-Alarum-Report_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\newpage
+
+\begin{table}[!h]
+
+\caption{\label{tab:unnamed-chunk-11}Environmental samples summary}
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\fontsize{8}{10}\selectfont
+\begin{tabu} to \linewidth {>{\raggedright}X>{\centering}X>{\centering}X}
+\toprule
+\textbf{Total\_homesteads} & \textbf{Sample\_Type} & \textbf{Sample\_Count\_\%}\\
+\midrule
+\cellcolor{gray!10}{115} & \cellcolor{gray!10}{Water\_samples} & \cellcolor{gray!10}{115 (100\%)}\\
+\addlinespace
+115 & Soil\_samples & 115 (100\%)\\
+\addlinespace
+\cellcolor{gray!10}{115} & \cellcolor{gray!10}{Latrine\_samples} & \cellcolor{gray!10}{49 (42.6\%)}\\
+\addlinespace
+115 & Outdoor\_samples & 7 (6.1\%)\\
+\addlinespace
+\cellcolor{gray!10}{115} & \cellcolor{gray!10}{Chicken\_faeces\_samples} & \cellcolor{gray!10}{86 (74.8\%)}\\
+\bottomrule
+\end{tabu}}
+\end{table}
+
+\includegraphics{JPI-Alarum-Report_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+\end{document}

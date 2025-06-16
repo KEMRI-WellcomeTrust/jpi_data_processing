@@ -37,24 +37,76 @@ file_path = "/srv/shiny-server/jpi/processed_data/"
 ```{r}
 #load datasets
 hospital_df <- readRDS(here("data","hospital_df.rds"))
+hospital_paeds <- readRDS(here("data","hospital_paeds.rds"))
+hospital_adults <- readRDS(here("data","hospital_adults.rds"))
 community_wet_df <- readRDS(here("data","community_wet_df.rds"))
 community_stool_df <- readRDS(here("data","community_stool_df.rds"))
 community_care_seeking_df <- readRDS(here("data","community_care_seeking_df.rds"))
 exit_df <- readRDS(here("data","exit_df.rds"))
 pps_ward_df <- readRDS(here("data","pps_ward_df.rds"))
 pps_patient_df <- readRDS(here("data","pps_patient_df.rds"))
-rectal_swabs_df <- readRDS(here("data","samples","rectal_swabs_df.rds"))
-stool_kidms_df <- readRDS(here("data","samples","stool_kidms_df.rds"))
+
+## KIDMS 
+rectal_swabs_kidms_df <- readRDS(here("data","kidms_samples","rectal_swabs_kidms_df.rds"))
+
+community_stool_kidms_df <- readRDS(here("data","kidms_samples","community_stool_kidms_df.rds"))
 
 ```
+### Data Cleaning
+```{r}
+### Clean dates in "POSIXct" "POSIXt"
+hospital_df$ageyrs_adm = as.numeric(hospital_df$ageyrs_adm)
+hospital_df <- hospital_df %>% 
+  mutate(
+    cohort = if_else(ageyrs_adm <= 5, "Paed", 
+                     if_else(ageyrs_adm >= 18, "Adult", "")),
+    )
+save(hospital_df,file = paste0(file_path, "hospital_df.RData"))
+```
+
+```{r}
+### Clean dates in "POSIXct" "POSIXt" 
+community_wet_df %>% 
+select(starts_with("date_")) %>% 
+names()
+
+date_vars <- c(
+  "date_survey_hh","date_crf_completed_hh","date_crf_reviewed_hh","date_visit_esc","date_consent_esc","date_collect_ws","date_collect_ls", "date_collect_ls_2" ,"date_collect_cf","date_collect_ss","date_water_recieve","date_latrine_recieve","date_outdoor_recieve", "date_chickfaeces_sample_recieve","date_soil_recieve","date_soil_recieve","date_crf_reviewed_esc", "date_crf_completed_esc"  )
+              
+# Apply transformation to each variable in date_vars
+walk(date_vars, function(var) {
+  community_wet_df[[var]] <<- as.Date(format(
+    as.POSIXct(as.character(zap_labels(community_wet_df[[var]])), tz = "Africa/Nairobi"),
+    tz = "Africa/Nairobi" ))})
+save(community_wet_df,file = paste0(file_path, "community_wet_df.RData") )
+```
+
+```{r}
+### Clean dates in "POSIXct" "POSIXt" 
+community_stool_df %>% 
+select(starts_with("date_")) %>% 
+names()
+
+date_vars <- c(
+  "date_stool","date_consent_stool","date_collect_stool","date_stool_passing" ,"date_crf_completed_stool","date_crf_reviewed_stool")
+               
+
+# Apply transformation to each variable in date_vars
+walk(date_vars, function(var) {
+  community_stool_df[[var]] <<- as.Date(format(
+    as.POSIXct(as.character(zap_labels(community_stool_df[[var]])), tz = "Africa/Nairobi"),
+    tz = "Africa/Nairobi" ))})
+save(community_stool_df,file = paste0(file_path, "community_stool_df.RData") )
+```
+
 ### Save core datasets
 ```{r}
-save(community_wet_df,file = paste0(file_path, "community_wet_df.RData") )
-save(community_stool_df,file = paste0(file_path, "community_stool_df.RData") )
 save(community_care_seeking_df,file = paste0(file_path, "community_care_seeking_df.RData") )
 save(exit_df,file = paste0(file_path, "exit_df.RData") )
-save(hospital_df,file = paste0(file_path, "hospital_df.RData") )
-save(stool_kidms_df,file = paste0(file_path, "stool_kidms_df.RData"))
+
+save(rectal_swabs_kidms_df,file = paste0(file_path, "rectal_swabs_kidms_df.RData") )
+
+save(community_stool_kidms_df,file = paste0(file_path, "community_stool_kidms_df.RData"))
 ```
 ##clusters
 ```{r}
@@ -77,38 +129,17 @@ save(stool_kidms_df,file = paste0(file_path, "stool_kidms_df.RData"))
 
 ```
 
-### Data Cleaning
-```{r}
-hospital_df$ageyrs_adm = as.numeric(hospital_df$ageyrs_adm)
-
-### Clean dates in "POSIXct" "POSIXt" 
-community_wet_df %>% 
-select(starts_with("date_")) %>% 
-names()
-
-date_vars <- c(
-  "date_survey_hh","date_crf_completed_hh","date_crf_reviewed_hh","date_visit_esc","date_consent_esc","date_collect_ws","date_collect_ls", "date_collect_ls_2" ,"date_collect_cf","date_collect_ss","date_water_recieve","date_latrine_recieve","date_outdoor_recieve", "date_chickfaeces_sample_recieve","date_soil_recieve","date_soil_recieve","date_crf_reviewed_esc", "date_crf_completed_esc"  )
-               
-
-# Apply transformation to each variable in date_vars
-walk(date_vars, function(var) {
-  community_wet_df[[var]] <<- as.Date(format(
-    as.POSIXct(as.character(zap_labels(community_wet_df[[var]])), tz = "Africa/Nairobi"),
-    tz = "Africa/Nairobi" ))})
-
-```
-
 ### Summary value boxes
 ```{r}
 community <- as.numeric(length(which(!is.na(community_wet_df$record_id))))
 hospital <- as.numeric(length(which(!is.na(hospital_df$record_id))))
+paeds <- as.numeric(length(which(!is.na(hospital_paeds$record_id))))
+adults <- as.numeric(length(which(!is.na(hospital_adults$record_id))))
 exit <- as.numeric(length(which(!is.na(exit_df$record_id))))
-
 pps_ward <- as.numeric(length(which(!is.na(pps_ward_df$record_id))))
-
 pps_patient <- as.numeric(length(which(!is.na(pps_patient_df$record_id))))
 
-main_value_boxes <- data.frame(community = community, hospital = hospital, exit = exit, pps_ward = pps_ward, pps_patient = pps_patient)
+main_value_boxes <- data.frame(community = community, hospital = hospital,paeds = paeds, adults = adults, exit = exit, pps_ward = pps_ward, pps_patient = pps_patient)
 
 save(main_value_boxes,file = paste0(file_path, "main_value_boxes.RData") )
 
@@ -204,14 +235,13 @@ save(mismatched_hm,file = paste0(file_path, "mismatched_hm.RData") )
 
 ```
 
-
-### Stool sample completeness
+### Community Stool sample completeness
 
 ```{r}
 # Overall completeness
 stool_completeness_summary <- community_stool_df %>%
   summarise(
-    Target_samples = 46 * 6,
+    Target_samples = 120 * 6,
     Total_participants = n(),
     Stool_collected = sum(!is.na(date_collect_stool)),
     Not_collected = sum(is.na(date_collect_stool)),
@@ -226,6 +256,7 @@ kbl(stool_completeness_summary,caption = "Stool summary",booktabs = TRUE,
 save(stool_completeness_summary,file = paste0(file_path, "stool_completeness_summary.RData") )
 
 ```
+
 ### Reasons stool not collected 
 ```{r}
 rsns_stool_not_collected <- community_stool_df %>%
@@ -243,27 +274,190 @@ rsns_stool_not_collected <- community_stool_df %>%
 save(rsns_stool_not_collected,file = paste0(file_path, "rsns_stool_not_collected.RData"))
 
 ```
-### Stool kidms queries
+### Stool Redcap - Queries 
 ```{r}
-stool_wrong_serial_study_id <- stool_kidms_df %>% 
-  dplyr::filter(serial_study_id %in% c("1-61B-14-3W-F","	
-1-120-409-W-F1","1-120-409-W-F3","1-120-409-W-F4","1-12A-153-W-F","1-12A-153-W-F2","1-12A-153-W-F3","1-12A-153-W-F5","1-12A-153-W-F6","1-12A-44-2-F","1-12G-553-2W-F","1-12G-553-2W-F","112A110W-F2","112A110W-F3","112H185W-F1",	
-"112H185W-F2","112D282W-F1","	
-112D282W-F2","112N175W-F2","112A287-F1337","	
-112A287-F1","112A287-F2","112A287-F3","1-116G-478-W-F","1-113-428-6-W-F")) %>% 
-  select(serial_study_id,pk_specimen_id,date_collect,type_name)
-  
-kbl(stool_wrong_serial_study_id,caption = "Wrong format of serial study id",booktabs = TRUE,
-    linesep = "\\addlinespace",align = "lcccc") %>%
-  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
-    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+missing_stool_information <- community_stool_df %>% 
+  dplyr::filter(is.na(date_stool))
+write_csv(missing_stool_information, file = here("queries","missing_stool_information.csv"))
 
-write_csv(stool_wrong_serial_study_id, file = here("queries","stool_wrong_serial_study_id.csv"))
+save(missing_stool_information,file = paste0(file_path, "missing_stool_information.RData"))
+```
+#### Early dates - Before start date 2025-04-01
+```{r}
+
+start_date <- as.Date("2025-03-31")
+
+early_dates_combined <- bind_rows(
+  community_stool_df %>%
+    filter(!is.na(date_stool) & as.Date(date_stool) < start_date) %>%
+    select(record_id, date_value = date_stool,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_stool"),
+
+  community_stool_df %>%
+    filter(!is.na(date_consent_stool) & as.Date(date_consent_stool) < start_date) %>%
+    select(record_id, date_value = date_consent_stool,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_consent_stool"),
+
+  community_stool_df %>%
+    filter(!is.na(date_collect_stool) & as.Date(date_collect_stool) < start_date) %>%
+    select(record_id, date_value = date_collect_stool,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_collect_stool"),
+
+  community_stool_df %>%
+    filter(!is.na(date_stool_passing) & as.Date(date_stool_passing) < start_date) %>%
+    select(record_id, date_value = date_stool_passing,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_stool_passing")
+) %>%
+  arrange(record_id, redcap_repeat_instance,crf_completed_by_stool,date_column)
+
+write
+
+save(early_dates_combined,file = paste0(file_path, "early_dates_combined.RData"))
+
+```
+### Future dates 
+```{r}
+today <- Sys.Date()  # today's date
+
+future_dates_combined <- bind_rows(
+  community_stool_df %>%
+    filter(!is.na(date_stool) & as.Date(date_stool) > today) %>%
+    select(record_id, date_value = date_stool,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_stool"),
+
+  community_stool_df %>%
+    filter(!is.na(date_consent_stool) & as.Date(date_consent_stool) > today) %>%
+    select(record_id, date_value = date_consent_stool,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_consent_stool"),
+
+  community_stool_df %>%
+    filter(!is.na(date_collect_stool) & as.Date(date_collect_stool) > today) %>%
+    select(record_id, date_value = date_collect_stool,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_collect_stool"),
+
+  community_stool_df %>%
+    filter(!is.na(date_stool_passing) & as.Date(date_stool_passing) > today) %>%
+    select(record_id, date_value = date_stool_passing,redcap_repeat_instance,crf_completed_by_stool) %>%
+    mutate(date_column = "date_stool_passing")
+) %>%
+  arrange(record_id, date_column,redcap_repeat_instance,crf_completed_by_stool)
+
+save(future_dates_combined,file = paste0(file_path, "future_dates_combined.RData"))
+```
+### Stool sample collected but missing some stool dates 
+```{r}
+sample_dates_missing <- community_stool_df %>%
+  filter(sample_collected_stool == "Yes") %>%
+  filter(
+    is.na(date_stool) |
+    is.na(date_consent_stool) |
+    is.na(date_collect_stool) |
+    is.na(date_stool_passing)
+  ) %>%
+  select(record_id,sample_collected_stool,date_stool, date_consent_stool,date_collect_stool, date_stool_passing,redcap_repeat_instance,
+         crf_completed_by_stool)
+
+save(sample_dates_missing,file = paste0(file_path, "sample_dates_missing.RData"))
+```
+### Stool sample not collected but missing reasons
+```{r}
+missing_reason_stool_not_collected <- community_stool_df %>%
+  filter(
+    sample_collected_stool == "No" &
+    (is.na(rson_no_sample_stool) | rson_no_sample_stool == "")
+  ) %>%
+  select(record_id, sample_collected_stool, rson_no_sample_stool,redcap_repeat_instance,crf_completed_by_stool)
+
+save(missing_reason_stool_not_collected,file = paste0(file_path, "missing_reason_stool_not_collected.RData"))
+```
+
+### Stool kidms Checks
+```{r}
+### Checking STOOL 
+# 1. Total stool records
+total_redcap_stool <- nrow(community_stool_df)
+total_kidms_stool <- nrow(community_stool_kidms_df) 
+
+
+dup_stool_redcap <- community_stool_df %>%
+  count(number_stool) %>%
+  filter(n > 1) %>%
+  nrow()
+
+# 3. Matching study_ids
+matching_stool <- inner_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id"))
+
+matching_stool <- matching_stool %>% 
+  select(number_stool,everything())
+
+matched_count <- nrow(matching_stool)
+
+# 4. Non-matching study_ids
+stool_redcap_only <- anti_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id")) %>% nrow()
+
+stool_kidms_only <- anti_join(community_stool_kidms_df, community_stool_df, by = c("serial_study_id" = "number_stool")) %>% nrow()
+
+# 5. Summary table
+summary_table_stool <- tibble(
+  Source = c("community_stool_df", "community_stool_kidms_df"),
+  Total_stool = c(total_redcap_stool, total_kidms_stool),
+  Matching_study_ids = c(matched_count, matched_count),
+  Unmatched_study_ids = c(stool_redcap_only, stool_kidms_only)
+)
+
+#stool in REDCAP but NOT in kidms
+stool_redcap_only <- anti_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id")) %>% 
+  select(record_id,number_stool,everything())
+
+## 1. stool Record IDs in redcap but not in kidms:
+stool_in_redcap_not_in_kidms <- anti_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id"))
+
+stool_in_redcap_not_in_kidms <- stool_in_redcap_not_in_kidms %>% 
+  dplyr::filter(!is.na(date_collect_stool)) %>% 
+  select(record_id,number_stool,everything())
+
+write_csv(stool_in_redcap_not_in_kidms,file = here("queries","stool_in_redcap_not_in_kidms.csv"))
+```
+
+## stool Record IDs in kidms but not in dredcap:
+```{r}
+stool_wrong_serial_study_id <- anti_join(community_stool_kidms_df, community_stool_df, by = c("serial_study_id" = "number_stool")) 
+
+write_csv(stool_wrong_serial_study_id,file = here("queries","stool_in_kidms_not_in_redcap.csv"))
 
 save(stool_wrong_serial_study_id,file = paste0(file_path, "stool_wrong_serial_study_id.RData"))
+```
+
+
+```{r}
+# stool_wrong_serial_study_id <- community_stool_kidms_df %>%
+#   dplyr::filter(serial_study_id %in% c("1-61B-14-3W-F","
+# 1-120-409-W-F1","1-120-409-W-F3","1-120-409-W-F4","1-12A-153-W-F","1-12A-153-W-F2","1-12A-153-W-F3","1-12A-153-W-F5","1-12A-153-W-F6","1-12A-44-2-F","1-12G-553-2W-F","1-12G-553-2W-F","112A110W-F2","112A110W-F3","112H185W-F1",
+# "112H185W-F2","112D282W-F1","
+# 112D282W-F2","112N175W-F2","112A287-F1337","
+# 112A287-F1","112A287-F2","112A287-F3","1-116G-478-W-F","1-113-428-6-W-F","112A110W-F3","1-116D-463-2",
+# "1-116G-478-14-W","1-116G-478-W",
+# "1-117L-115-1","1-118B-","1-120-409-W-F1","1-12A-153-W-F1",
+# "1-161l-342-10","1-162D-59-7",
+# "112035W-F1","112035W-F5","112035W-F6",
+# "112A287-F1","112A287-F4","112D282W-F2","12035W-F2","12035W-F4","120617W-F1","120617W-F2","120617W-F3",
+# "120617W-F4","1A005-W-F","1A006-W-F")) %>%
+#   select(serial_study_id,pk_specimen_id,date_collect,type_name)
+# 
+# kbl(stool_wrong_serial_study_id,caption = "Wrong format of serial study id",booktabs = TRUE,
+#     linesep = "\\addlinespace",align = "lcccc") %>%
+#   kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+#     full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE)
+# 
+# write_csv(stool_wrong_serial_study_id, file = here("queries","stool_wrong_serial_study_id.csv"))
+# 
+# save(stool_wrong_serial_study_id,file = paste0(file_path, "stool_wrong_serial_study_id.RData"))
+```
 
 ## Missing time_point
-miss_stool_time_point<-stool_kidms_df %>% 
+```{r}
+
+miss_stool_time_point<-community_stool_kidms_df %>% 
   dplyr::filter(!time_point == "Wet") %>% 
   select(serial_study_id,pk_specimen_id,date_collect,time_point)
 
@@ -272,34 +466,96 @@ kbl(miss_stool_time_point,caption = "Missing stool time point ",booktabs = TRUE,
   kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
     full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
 
+write_csv(miss_stool_time_point, file = here("queries","miss_stool_time_point.csv"))
+
 save(miss_stool_time_point,file = paste0(file_path, "miss_stool_time_point.RData"))
 ```
 
-### Rectal swabs - Admission samples
-```{r}
-rectal_swab_redcap <- hospital_df %>% 
-  select(record_id,sample_num_rectswab1_adm,sample_num_rectswab2_adm,date_rectswab_adm,rectswab_by_adm)
+### Admission samples - Rectal swabs and stool
 
+```{r}
 admission_samples_summary <- hospital_df %>%
+  filter(!is.na(cohort)) %>%
+  group_by(cohort) %>%
   summarise(
-    Rectal_Swab = sum(!is.na(date_rectswab_adm))
-    ) %>%
-  pivot_longer(
-    cols = everything(),
-    names_to = "Sample_Type",
-    values_to = "Total_Collected"
-  )
-save(admission_samples_summary,file = paste0(file_path, "admission_samples_summary.RData") )
+    Rectal_swabs_collected = sum(!is.na(date_rectswab_adm)),
+    Stool_samples_collected = sum(!is.na(date_stoolsample_adm)),
+    .groups = "drop") %>%
+  mutate(
+    Target = case_when(
+    cohort == "Adult" ~ 100,
+    cohort == "Paeds" ~ 100),
+    Total_samples = Rectal_swabs_collected + Stool_samples_collected) %>%
+  select( cohort,Target,Rectal_swabs_collected,Stool_samples_collected,Total_samples) %>%
+  adorn_totals(where = "row")
+
 
 kbl(admission_samples_summary,caption = "Admission samples summary",booktabs = TRUE,
     linesep = "\\addlinespace",align = "lcccc") %>%
   kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
     full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE)
+
+save(admission_samples_summary,file = paste0(file_path, "admission_samples_summary.RData") )
+
 ```
-### Rectal swab queries _kidms
+### Rectal swab checks 
+```{r}
+R1_redcap <- hospital_df %>% 
+  dplyr::filter(!is.na(sample_num_rectswab1_adm)) %>% 
+  select(record_id, sample_num_rectswab1_adm,rectswab_adm,cohort)
+
+adm_stool <- hospital_df %>% 
+  dplyr::filter(!is.na(sample_num_stool_adm)) %>% 
+  select(record_id,sample_num_stool_adm,stoolsample_adm)
+
+R1_swabs_kidms <- rectal_swabs_kidms_df %>%
+  filter(str_detect(serial_study_id, "-R1$")) 
+  
+all_R1_swabs <- left_join(R1_redcap, R1_swabs_kidms, by = c("sample_num_rectswab1_adm" = "serial_study_id"))
+
+# 1. Total R1 records
+total_redcap <- nrow(R1_redcap)
+total_kidms <- nrow(R1_swabs_kidms) 
+
+# 2. Duplicated study_ids
+dup_redcap <- R1_redcap %>%
+  count(sample_num_rectswab1_adm) %>%
+  filter(n > 1) %>%
+  nrow()
+
+dup_kidms <- R1_swabs_kidms %>%
+  count(serial_study_id) %>%
+  filter(n > 1) %>%
+  nrow()
+# 3. Matching study_ids
+matching_R1 <- inner_join(R1_redcap, R1_swabs_kidms, by = c("sample_num_rectswab1_adm" = "serial_study_id"))
+matched_count <- nrow(matching_R1)
+
+# 4. Non-matching study_ids
+redcap_only <- anti_join(R1_redcap, R1_swabs_kidms, by = c("sample_num_rectswab1_adm" = "serial_study_id")) %>% nrow()
+
+kidms_only <- anti_join(R1_swabs_kidms, R1_redcap, by = c("serial_study_id" = "sample_num_rectswab1_adm")) %>% nrow()
+
+# 5. Summary table
+summary_table <- tibble(
+  Source = c("R1_redcap", "R1_swabs_kidms"),
+  Total_R1s = c(total_redcap, total_kidms),
+  Duplicated_study_ids = c(dup_redcap, dup_kidms),
+  Matching_study_ids = c(matched_count, matched_count),
+  Unmatched_study_ids = c(redcap_only, kidms_only)
+)
+
+#R1 swabs in REDCAP but NOT in kidms
+R1_redcap_only <- anti_join(R1_redcap, R1_swabs_kidms, by = c("sample_num_rectswab1_adm" = "serial_study_id")) %>% 
+  select(record_id,sample_num_rectswab1_adm,everything())
+
+write_csv(R1_redcap_only,file = here("queries","R1_redcap_only.csv"))
+
+save(R1_redcap_only,file = paste0(file_path, "R1_redcap_only.RData")) 
+```
 
 ```{r}
-rectswab1_miss <- rectal_swabs_df %>% 
+rectswab1_miss <- rectal_swabs_kidms_df %>% 
   dplyr::filter(serial_study_id %in% c("1P002-W-R2","1P002-W-R2","1P003-W-R2","1P003-W-R2")) %>% 
   select(serial_study_id,type_name,date_collect,pk_specimen_id)
  
@@ -311,7 +567,7 @@ kbl(rectswab1_miss,caption = "Record ids missing rectal swab 1",booktabs = TRUE,
 save(rectswab1_miss,file = paste0(file_path, "rectswab1_miss.RData")) 
 
 ### wrong serial number format 
-wrong_serial_study_id_format <- rectal_swabs_df %>% 
+wrong_serial_study_id_format <- rectal_swabs_kidms_df %>% 
   dplyr::filter(serial_study_id %in% c("1P-023-W-R2","1P026","IP027-W-R1","IP027-W-R2
 ","1PO42-W-R2","1P060")) %>% 
   select(serial_study_id,type_name,date_collect,pk_specimen_id)
@@ -326,9 +582,9 @@ write_csv(wrong_serial_study_id_format, file = here("queries","wrong_serial_stud
 save(wrong_serial_study_id_format,file = paste0(file_path, "wrong_serial_study_id_format.RData")) 
 
 ### Rectal swab specimen source 
-rectswab_specimen_source <- rectal_swabs_df %>% 
+rectswab_specimen_source <- rectal_swabs_kidms_df %>% 
   dplyr::filter(specimen_source %in% c("clinic","field")) %>% 
-  select(serial_study_id,specimen_source,type_name,date_collect)
+  select(serial_study_id,pk_specimen_id,specimen_source,type_name,date_collect)
 
 kbl(rectswab_specimen_source,caption = "Wrong rectal_swab specimen source",booktabs = TRUE,
     linesep = "\\addlinespace",align = "lcccc") %>%
@@ -341,7 +597,7 @@ save(rectswab_specimen_source,file = paste0(file_path, "rectswab_specimen_source
 
 ## Rectal swabs missing date recieved 
 
-rectswab_date_recieved_miss <- rectal_swabs_df %>%
+rectswab_date_recieved_miss <- rectal_swabs_kidms_df %>%
   dplyr::filter(is.na(date_received)) %>% 
   select(serial_study_id, type_name,pk_specimen_id,date_collect, date_received)
   
@@ -356,7 +612,7 @@ save(rectswab_date_recieved_miss,file = paste0(file_path, "rectswab_date_recieve
 
 ## Rectal swabs missing time recieved 
 
-rectswab_time_recieved_miss <- rectal_swabs_df %>%
+rectswab_time_recieved_miss <- rectal_swabs_kidms_df %>%
   dplyr::filter(is.na(time_received)) %>% 
   select(serial_study_id, type_name,pk_specimen_id,date_collect, time_received)
   
@@ -425,7 +681,7 @@ environmental_sample_summary_2 <- community_wet_df %>%
     names_to = "Sample_Type",
     values_to = "Sample_Count_%"
   )
-save(environmental_sample_summary_2,file = paste0(file_path, "environmental_sample_summary_2.RData") )
+save(environmental_sample_summary_2,file = paste0(file_path, "environmental_sample_summary_2.RData"))
 ```
 ### Reasons Latrine sample not collected 
 ```{r}
@@ -438,9 +694,81 @@ rsns_latrine_not_collected <- community_wet_df %>%
   ) %>%
   mutate(
     Percent = paste0(Percent, "%")
-  )
+  ) %>% 
+  adorn_totals(where = "row")
 
 save(rsns_latrine_not_collected,file = paste0(file_path, "rsns_latrine_not_collected.RData"))
+```
+### Latrine and outdoor samples summary
+```{r}
+# Step 1: Summarise main sample group counts
+combined_summary <- community_wet_df %>%
+  mutate(
+    Sample_group = case_when(
+      latrine_sample_collected_ls == "Yes" ~ "Latrine Sample Collected",
+      latrine_sample_collected_ls == "No" & outdoor_sample_collected_ls == "Yes" ~ "Latrine Sample Not Collected + Outdoor Sample Collected",
+      latrine_sample_collected_ls == "No" & outdoor_sample_collected_ls == "No" ~ "Latrine Sample Not Collected + Outdoor Sample Not Collected",
+      latrine_sample_collected_ls == "No" & is.na(outdoor_sample_collected_ls) ~ "Latrine Sample Not Collected + Outdoor Sample N/A",
+      TRUE ~ "Other / Unknown"
+    )
+  ) %>%
+  count(Sample_group, name = "Total")
+
+# Step 2: Reason summaries for specific groups
+
+# 2a: Latrine sample not collected + Outdoor sample collected
+latrine_reasons_collected <- community_wet_df %>%
+  filter(latrine_sample_collected_ls == "No", outdoor_sample_collected_ls == "Yes") %>%
+  count(rson_no_sample_ls, name = "n") %>%
+  mutate(reason_text = paste0(rson_no_sample_ls, " (", n, ")")) %>%
+  summarise(text = paste(reason_text, collapse = "; ")) %>%
+  pull(text)
+
+# 2b: Latrine sample not collected + Outdoor sample not collected
+latrine_reasons_not_collected_outdoor_not_collected <- community_wet_df %>%
+  filter(latrine_sample_collected_ls == "No", outdoor_sample_collected_ls == "No", !is.na(rson_no_sample_ls)) %>%
+  count(rson_no_sample_ls, name = "n") %>%
+  mutate(reason_text = paste0(rson_no_sample_ls, " (", n, ")")) %>%
+  summarise(text = paste(reason_text, collapse = "; ")) %>%
+  pull(text)
+
+# 2c: Latrine sample not collected + Outdoorsample is blank, excluding "No facility"
+latrine_reasons_blank <- community_wet_df %>%
+  filter(latrine_sample_collected_ls == "No", is.na(outdoor_sample_collected_ls),
+         !is.na(rson_no_sample_ls), rson_no_sample_ls != "No facility") %>%
+  count(rson_no_sample_ls, name = "n") %>%
+  mutate(reason_text = paste0(rson_no_sample_ls, " (", n, ")")) %>%
+  summarise(text = paste(reason_text, collapse = "; ")) %>%
+  pull(text)
+
+# 2d: Outdoor sample not collected reasons
+outdoor_reasons <- community_wet_df %>%
+  filter(outdoor_sample_collected_ls == "No", !is.na(rson_no_sample_od_ls)) %>%
+  count(rson_no_sample_od_ls, name = "n") %>%
+  mutate(reason_text = paste0(rson_no_sample_od_ls, " (", n, ")")) %>%
+  summarise(text = paste(reason_text, collapse = "; ")) %>%
+  pull(text)
+
+# Step 3: Add all reasons into final summary
+latrine_outdoor_summary <- combined_summary %>%
+  mutate(
+    Latrine_Reasons = case_when(
+      Sample_group == "Latrine Sample Not Collected + Outdoor Sample Collected" ~ latrine_reasons_collected,
+      Sample_group == "Latrine Sample Not Collected + Outdoor Sample N/A" ~ latrine_reasons_blank,
+      Sample_group == "Latrine Sample Not Collected + Outdoor Sample Not Collected" ~ latrine_reasons_not_collected_outdoor_not_collected,
+      TRUE ~ ""
+    ),
+    Outdoor_Reasons = case_when(
+      Sample_group == "Latrine Sample Not Collected + Outdoor Sample Not Collected" ~ outdoor_reasons,
+      TRUE ~ ""
+    )
+  ) %>%
+  adorn_totals(where = "row")
+
+write_csv(latrine_outdoor_summary, file = here("data","latrine_outdoor_summary.csv"))
+
+save(latrine_outdoor_summary,file = paste0(file_path, "latrine_outdoor_summary.RData"))
+
 ```
 
 ```{r}
@@ -450,36 +778,239 @@ rsns_latrine_not_collected <- community_wet_df %>%
 
 write_csv(rsns_latrine_not_collected, here("data","rsns_latrine_not_collected.csv"))
 ```
-### PPS Ward
 
 ```{r}
-# First report: Summary of wards
-pps_ward_summary <- pps_ward_df %>%
-  filter(!is.na(ward_paeds_pps)) %>%
-  group_by(ward_paeds_pps) %>%
-  summarise(
-    total_enrolled_ward = n(),
-    .groups = "drop"
-  ) %>%
-  rename(Ward_Name = ward_paeds_pps)
+### Stool records 
+records_stool_not_collected <- community_stool_df %>%
+  filter(
+    sample_collected_stool == "No") %>%
+  select(
+    record_id,redcap_repeat_instance,
+    sample_collected_stool,
+    rson_no_sample_stool,
+    everything(),-c(redcap_event_name,redcap_repeat_instrument))
 
-# Second report: Summary of patients
-pps_patient_summary <- pps_patient_df %>%
-  filter(!is.na(ward_name_pps)) %>%
-  group_by(ward_name_pps) %>%
-  summarise(
-    Total_patients = n(),
-    .groups = "drop"
-  ) %>%
-  rename(Ward_Name = ward_name_pps)
+write_csv(records_stool_not_collected, file = here("data","records_stool_not_collected.csv"))
+```
+### Latrine records 
 
-save(pps_patient_summary,file = paste0(file_path, "pps_patient_summary.RData"))
+```{r}
+latrine_not_collected_outdoor_missing <- community_wet_df %>%
+  filter(
+    latrine_sample_collected_ls == "No",
+    is.na(outdoor_sample_collected_ls)
+  ) %>%
+  select(
+    record_id,
+    latrine_sample_collected_ls,
+    rson_no_sample_ls,  # Reason latrine not collected
+    date_collect_ls,
+    time_collect_ls,
+    outdoor_sample_collected_ls,
+    rson_no_sample_od_ls,  # Reason outdoor not collected (may also be NA)
+    
+  )
+latrine_not_collected_outdoor_missing$hm_number_hh <- sapply(
+  strsplit(latrine_not_collected_outdoor_missing$record_id, "-"),
+  function(x) x[3]
+)
+
+latrine_not_collected_outdoor_missing <- latrine_not_collected_outdoor_missing %>%
+  select(record_id, hm_number_hh, everything())
+write_csv(latrine_not_collected_outdoor_missing,file =here("data","latrine_not_collected_outdoor_missing.csv"))
+```
+
+```{r}
+latrine_outdoor_not_collected <- community_wet_df %>%
+  filter(
+    latrine_sample_collected_ls == "No",
+    outdoor_sample_collected_ls == "No"
+  ) %>%
+  select(
+    record_id,
+    latrine_sample_collected_ls,
+    rson_no_sample_ls,
+    date_collect_ls,
+    time_collect_ls,
+    outdoor_sample_collected_ls,
+    rson_no_sample_od_ls,
+    outdoor_sample_number_ls
+  )
+
+write_csv(latrine_outdoor_not_collected,file =here("data","latrine_outdoor_not_collected.csv"))
 ```
 
 ```{r}
 
+stool = community_stool_df %>% 
+  select(record_id,date_stool,sample_collected_stool,rson_no_sample_stool,date_collect_stool,number_stool)
+
+nolatrine_withstool <- latrine_outdoor_not_collected %>% 
+  left_join(stool, by= "record_id") 
+
+nolatrine_withstool <- nolatrine_withstool %>% 
+  select(record_id, number_stool, everything()) %>% 
+  dplyr::filter(is.na(number_stool))
 
 
+```
+### Latrine and outdoor not collected 
+```{r}
+miss_latrine_outdoor <- community_wet_df %>% 
+  dplyr::filter(latrine_sample_collected_ls == "No") %>% 
+  dplyr::filter(outdoor_sample_collected_ls == "No") %>% 
+select(record_id,latrine_sample_collected_ls,rson_no_sample_ls,date_collect_ls,latrine_sample_number_ls,outdoor_sample_collected_ls,rson_no_sample_od_ls,date_collect_ls_2,outdoor_sample_number_ls)
 
+stool = community_stool_df %>% 
+  select(record_id,date_stool,sample_collected_stool,rson_no_sample_stool,date_collect_stool,number_stool)
+
+miss_latrine_outdoor <-  miss_latrine_outdoor %>% 
+  left_join(stool, by = "record_id")
+
+miss_latrine_outdoor <- miss_latrine_outdoor %>% 
+   select(record_id, number_stool, everything()) %>% 
+   dplyr::filter(is.na(number_stool))
+
+miss_latrine_outdoor <- miss_latrine_outdoor %>% 
+  filter(is.na(number_stool)) %>%
+  distinct(record_id, .keep_all = TRUE)
+  
+write_csv(miss_latrine_outdoor,file = here("data_cleaning","miss_stool_latrine_outdoor1.csv")) 
+```
+### Latrine not collected , outdoor missing 
+```{r}
+latrine_not_collected_outdoor_missing <- community_wet_df %>%
+  filter(
+    latrine_sample_collected_ls == "No",
+    is.na(outdoor_sample_collected_ls)
+  ) %>%
+  select(
+    record_id,
+    latrine_sample_collected_ls,
+    rson_no_sample_ls,  # Reason latrine not collected
+    date_collect_ls,
+    time_collect_ls,
+    outdoor_sample_collected_ls,
+    rson_no_sample_od_ls,  # Reason outdoor not collected (may also be NA)
+    
+  )
+
+latrine_not_collected_outdoor_missing <- latrine_not_collected_outdoor_missing %>% 
+  left_join(stool, by = "record_id")
+
+latrine_not_collected_outdoor_missing <- latrine_not_collected_outdoor_missing %>% 
+   select(record_id, number_stool, everything()) %>% 
+   dplyr::filter(is.na(number_stool)) 
+
+latrine_not_collected_outdoor_missing <- latrine_not_collected_outdoor_missing %>%
+  filter(is.na(number_stool)) %>%
+  distinct(record_id, .keep_all = TRUE)
+
+write_csv(latrine_not_collected_outdoor_missing,file = here("data_cleaning","miss_stool_latrine_outdoor2.csv"))
+```
+
+### PPS summaries
+
+```{r}
+## Join pps ward and pps patient 
+pps_ward_df <- pps_ward_df %>% 
+  select(-redcap_event_name)
+pps_all<- full_join(pps_ward_df, pps_patient_df, by = "record_id")
+
+
+pps_patient_summary <- pps_all %>%
+  mutate(ward_round_pps = paste0("Round", ward_round_pps)) %>%
+  group_by(ward_name_pps, ward_round_pps) %>%
+  summarise(
+    total_patients = n_distinct(part_id_pps),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = ward_round_pps,
+    values_from = total_patients,
+    values_fill = 0
+  ) %>%
+  rowwise() %>%
+  mutate(Total_Patients = sum(c_across(starts_with("Round")))) %>%
+  ungroup() %>%
+  arrange(desc(ward_name_pps)) %>%
+  adorn_totals(where = "row") %>% 
+  rename(Ward_Name = ward_name_pps) 
+ 
+
+kbl(pps_patient_summary,caption = "PPS Summary",booktabs = TRUE,
+    linesep = "\\addlinespace",align = "lcccc") %>%
+  kable_styling(latex_options = c("striped", "scale_down", "hold_position"),font_size = 8,
+    full_width = TRUE, position = "left") %>% row_spec(0, bold = TRUE) 
+
+save(pps_patient_summary,file = paste0(file_path, "pps_patient_summary.RData"))
+```
+### Exit summaries 
+```{r}
+exit_balance <- exit_df %>% 
+  group_by(cluster_exit) %>% 
+summarise(total = n())
+
+write_csv(exit_balance,file = here("field_work_register","exit_balance.csv"))
+
+missing_cluster <- exit_df %>% 
+  dplyr::filter(is.na(cluster_exit)) %>% 
+  select(record_id,cluster_exit,date_interview_exit,crf_completed_by_exit)
+
+write_csv(missing_cluster,file = here("field_work_register","missing_cluster.csv"))
+```
+ ### Checking STOOL 
+```{r}
+# 1. Total stool records
+total_redcap_stool <- nrow(community_stool_df)
+total_kidms_stool <- nrow(community_stool_kidms_df) 
+
+
+dup_stool_redcap <- community_stool_df %>%
+  count(number_stool) %>%
+  filter(n > 1) %>%
+  nrow()
+
+# 3. Matching study_ids
+matching_stool <- inner_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id"))
+
+matching_stool <- matching_stool %>% 
+  select(number_stool,everything())
+
+matched_count <- nrow(matching_stool)
+
+# 4. Non-matching study_ids
+stool_redcap_only <- anti_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id")) %>% nrow()
+
+stool_kidms_only <- anti_join(community_stool_kidms_df, community_stool_df, by = c("serial_study_id" = "number_stool")) %>% nrow()
+
+# 5. Summary table
+summary_table_stool <- tibble(
+  Source = c("community_stool_df", "community_stool_kidms_df"),
+  Total_stool = c(total_redcap_stool, total_kidms_stool),
+  Matching_study_ids = c(matched_count, matched_count),
+  Unmatched_study_ids = c(stool_redcap_only, stool_kidms_only)
+)
+
+#stool in REDCAP but NOT in kidms
+stool_redcap_only <- anti_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id")) %>% 
+  select(record_id,number_stool,everything())
+
+## 1. stool Record IDs in redcap but not in kidms:
+stool_in_redcap_not_in_kidms <- anti_join(community_stool_df, community_stool_kidms_df, by = c("number_stool" = "serial_study_id"))
+
+stool_in_redcap_not_in_kidms <- stool_in_redcap_not_in_kidms %>% 
+  dplyr::filter(!is.na(date_collect_stool)) %>% 
+  select(record_id,number_stool,everything())
+
+write_csv(stool_in_redcap_not_in_kidms,file = here("queries","stool_in_redcap_not_in_kidms.csv"))
+```
+
+## stool Record IDs in kidms but not in dredcap:
+```{r}
+stool_in_kidms_not_in_redcap <- anti_join(community_stool_kidms_df, community_stool_df, by = c("serial_study_id" = "number_stool")) %>% 
+  distinct(serial_study_id,.keep_all = TRUE)
+
+write_csv(stool_in_kidms_not_in_redcap,file = here("queries","stool_in_kidms_not_in_redcap.csv"))
 ```
 

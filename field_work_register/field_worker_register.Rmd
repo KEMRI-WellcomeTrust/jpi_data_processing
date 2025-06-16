@@ -20,40 +20,39 @@ library(readxl)
 
 ```{r}
 ## sampled - From Moses 
-New_Mwembekati_hms_1km_from_dispensary_sample <- read_csv(here("field_work_register/sampled/New_Mwembekati_hms_1km_from_dispensary.csv"))
+takaungu_ocean_moses <- read_csv(here("field_work_register/sampled/Takaungu_hms_near_Ocean.csv"))
 
 ## from DSS
-New_Mwembekati_hms_1km_from_dispensary_dss <- read_csv(here("field_work_register/raw/New_Mwembekati_hms_1km_from_dispensary.csv"))
+takaungu_ocean_dss <- read_csv(here("field_work_register/raw/Takaungu_hms_near_Ocean.csv"))
 ```
-### New_Mwembekati_1km_from_dispensary 
+### takaungu near the ocean
 ```{r}
 ## select hm_no, type
-New_Mwembekati_hms_1km_from_dispensary_sample <- New_Mwembekati_hms_1km_from_dispensary_sample %>% 
-  select(hm_no, type)
+takaungu_ocean_moses  <- takaungu_ocean_moses  %>% 
+  select(ez, sub_ez,hm_no, type)
 
 ### Join with DSS raw data to get residents 
-New_Mwembekati_hms_1km_from_dispensary_sample_final <- New_Mwembekati_hms_1km_from_dispensary_sample %>% 
-  left_join(New_Mwembekati_hms_1km_from_dispensary_dss, by = "hm_no") %>% 
+takaungu_ocean_final <- takaungu_ocean_moses %>% 
+  left_join(takaungu_ocean_dss, by = c("ez", "sub_ez","hm_no")) %>% 
   select(ez, sub_ez, hm_no,type, everything(),-longitude_dd, -latitude_dd, -fk_bu,-fk_location, -fk_district, -fk_sublocation,-loc_name,-fk_sub_ez, -fk_hm, -fk_person,-vital_status)
 
- 
 ```
 ## Generate lables 
 ```{r}
-mwembekati_dispensary <- New_Mwembekati_hms_1km_from_dispensary_sample_final %>%
-  group_by(hm_no) %>%
+takaungu_ocean_register <- takaungu_ocean_final %>%
+  group_by(ez, sub_ez, hm_no) %>%
   mutate(member_id = row_number()) %>%
   ungroup()
 
 ### Generate site variable 
-mwembekati_dispensary <- mwembekati_dispensary %>%
+takaungu_ocean_register <- takaungu_ocean_register %>%
   mutate(
     site = 1,
     record_id = str_c(site, str_c(ez, sub_ez), hm_no, sep = "-")
   ) %>%
   relocate(site, .before = 1)
 
-mwembekati_dispensary <- mwembekati_dispensary %>%
+takaungu_ocean_register <- takaungu_ocean_register %>%
   mutate(
     # Create member_number
     member_number = str_c(site, str_c(ez, sub_ez), hm_no, member_id, sep = "-"),
@@ -75,7 +74,7 @@ mwembekati_dispensary <- mwembekati_dispensary %>%
   ) %>%
   relocate(c(member_number, stool_label), .after = last_col())  # Move member_number and stool_label to the last columns
 
-write_csv(mwembekati_dispensary, here("field_work_register","register","mwembekati_dispensary_register.csv"))
+write_csv(takaungu_ocean_register, here("field_work_register","register","takaungu_ocean_register.csv"))
 
 ```
 
